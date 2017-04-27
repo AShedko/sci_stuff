@@ -29,37 +29,28 @@ class EyeDat:
         self.health = health
         self.exp = exp
         patients = os.listdir("./Данные айтрекера/{}/".format(health))
-        fnames = [(glob.glob("./*/{}/{}/Fix*_{}*".format(health, pat, exp)), glob.glob("./*/{}/{}/Simple*_{}*".format(health, pat, exp))) for pat in patients]
+        fnames = [(glob.glob("./*/{}/{}/Fix*_{}*".format(health, pat, exp))[0], glob.glob("./*/{}/{}/Simple*_{}*".format(health, pat, exp))[0]) for pat in patients]
         df_s = [(pd.read_csv(n[0], delim_whitespace =1, decimal=',',usecols=["CURRENT_FIX_START","CURRENT_FIX_END","CURRENT_FIX_X","CURRENT_FIX_Y","CURRENT_FIX_DURATION"]),
-                 pd.read_csv(n[1], delim_whitespace =1, decimal=',',usecols=["LEFT_GAZE_X","LEFT_GAZE_Y","RIGHT_GAZE_X","RIGHT_GAZE_Y"])) for n in fnames]
+                 pd.read_csv(n[1], delim_whitespace =1, decimal=',',usecols=["LEFT_GAZE_X","LEFT_GAZE_Y","RIGHT_GAZE_X","RIGHT_GAZE_Y"])) for n in fnames]        
         disps = self.get_disps(df_s)
-        df = pd.concat([pd.concat(df_s[0]),pd.Series(disps)],axis=1)
-        self.df = df
+        self.df = [f[0] for f in df_s ]
+        self.disps = disps
+
 
     def get_disps(self,df_s):
         disps = []
         for fixs,simp in df_s:
-            df = np.asarray(simp.loc[:,(simp != '.').any(axis=0)].replace)
+            df = simp.loc[:,(simp != '.').any(axis=0)]
             df = df.loc[:, (df != '.').any(axis=0)]
             df = df.stack().str.replace(',','.').unstack()
             df = df[df[df.columns[0]]!='.'].astype(float)
             simp = df
-            step = len(simp)/len(fixs)
+            stepsize = len(simp)/int(fixs.tail(1)["CURRENT_FIX_END"])            
             for rec in fixs[["CURRENT_FIX_START","CURRENT_FIX_END"]].itertuples():
-                fixation = np.asarray(simp[int(step*rec[1]):int(step*rec[2])])
-                disps.append(dists(fixation))
+                fixation = np.asarray(simp[int(stepsize*rec[1]):int(stepsize*rec[2])])                
+                disps.append(dists(fixation).var())
 
         return disps
-
-    def hist_calc(self, axes):
-#         mean = np.array((self.df["CURRENT_FIX_X"].mean(), self.df["CURRENT_FIX_Y"].mean()))
-#         pairs = ([np.linalg.norm(x - mean) for x in np.array((self.df["CURRENT_FIX_X"],self.df["CURRENT_FIX_Y"])).transpose()],self.df["CURRENT_FIX_DURATION"])
-        pairs = (self.disps, self.df["CURRENT_FIX_DURATION"])
-        axes.scatter(pairs[0],pairs[1], s = 4)
-        axes.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-        if self.exp == 1 : axes.set_ylabel(self.health)
-        if self.health == "Во время лечения" : axes.set_xlabel("Эксперимент "+ str(self.exp))
-        return pairs
 
 def __main__(argc, argv):
     f, axarr = plt.subplots(3, 4)
