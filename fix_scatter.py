@@ -16,32 +16,41 @@ skip_val = ['.']
 
 step = 30000
 
-class PType(Enum):
-    Healthy = 'Healthy'
-    Treat = 'Treat'
-    Slut = 'Stut'
-
-class Health(Enum):
-    Healthy = "Без заикания"
-    Stut = "С заиканием"
-    Treat = "Во время лечения"
+Health = ["Без заикания", "До лечения", "Во время лечения"]
 
 class EyeDat:
+    """ The class that handles the dataset """
     def __init__(self,health,exp,trial):
-        fnames = glob.glob("./Eyetrack//{}/*/Fix*_{}*".format(health,exp))
-        df_s = [pd.read_csv(n,delimiter='\t',decimal=',')for n in fnames]
+        self.health = health
+        self.exp = exp
+        patiets = os.listdir("./Eyetrack/{}".format(health))
+        fnames = [(glob.glob("./Eyetrack/{}/{}/Fix*_{}*".format(health,pat,exp)),glob.glob("./Eyetrack/{}/{}/Simple*_{}*".format(health,pat,exp))) for pat in patients]
+        fix_df_s = [pd.read_csv(n[0],delimiter='\t',decimal=',') for n in fnames]
+        simpl_df_s =  [pd.read_csv(n[1],delimiter='\t',decimal=',') for n in fnames]
         lst = []
         for df in df_s:
             lst.append(df[(df["CURRENT_FIX_END"] // step) % 3 == trial])
         df = pd.concat(lst)
-        df["NEXT_FIX_DISTANCE"] = [ x.replace(',', '.') for x in df["NEXT_FIX_DISTANCE"] ]
-        df["NEXT_FIX_DISTANCE"].astype(float)
         self.df = df
-        self.data = (self.df["CURRENT_FIX_DURATION"],self.df["NEXT_FIX_DISTANCE"])
-    
-    def plot_calc(self):
-        
-        return plt.scatter(self.df["CURRENT_FIX_DURATION"],self.df["NEXT_FIX_DISTANCE"]);
 
-def make_plot():
-    
+    def hist_calc(self, axes):
+#         mean = np.array((self.df["CURRENT_FIX_X"].mean(), self.df["CURRENT_FIX_Y"].mean()))
+#         pairs = ([np.linalg.norm(x - mean) for x in np.array((self.df["CURRENT_FIX_X"],self.df["CURRENT_FIX_Y"])).transpose()],self.df["CURRENT_FIX_DURATION"])
+        pairs = (self.disps, self.df["CURRENT_FIX_DURATION"])
+        axes.scatter(pairs[0],pairs[1], s = 4)
+        axes.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+        if self.exp == 1 : axes.set_ylabel(self.health)
+        if self.health == "Во время лечения" : axes.set_xlabel("Эксперимент "+ str(self.exp))
+        return pairs
+
+def __main__(argc, argv):
+    f, axarr = plt.subplots(3, 4)
+    i = 0
+    for cond in Health:
+        for exp in range(1,5):
+            dat = EyeDat(cond,exp,0)
+            dat.hist_calc(axarr[i,exp-1])
+            i+=1
+
+    f.set_label("Длительность фиксации")
+    f.show()

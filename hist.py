@@ -126,8 +126,6 @@ def hist_from_dir(dir, solo = False):
         solo_dir_data = get_data_from_dir(dir, True)
         solo_data = get_init_arr(os.listdir(dir))
         for f in os.listdir(dir):
-            fullpath = os.path.join(dir, f)
-
             solo_data[f] = preprocess_data(solo_dir_data[f])
             return solo_data
     else:
@@ -171,7 +169,6 @@ def makeTest(data):
             file.write(str(stats.mannwhitneyu(data[group.value + "_" + exp.value][0]['CURRENT_SAC_AVG_VELOCITY'],
                   data[group.value + "_" + exp.value][1]['CURRENT_SAC_AVG_VELOCITY']))+ '\n'+ '\n')
     file.close()
-    pass
 
 def main(solo = False):
     all_data = {}
@@ -193,10 +190,10 @@ def main(solo = False):
                         makeHist(all_data[dir_name][f][i])
 
 
-            
+
     #makeHist(all_data)
 
-    
+
     # makeTest(all_data)
     return 0
 
