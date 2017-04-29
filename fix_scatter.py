@@ -45,9 +45,9 @@ class EyeDat:
             df = df.stack().str.replace(',','.').unstack()
             df = df[df[df.columns[0]]!='.'].astype(float)
             simp = df
-            stepsize = len(simp)/int(fixs.tail(1)["CURRENT_FIX_END"])            
+            stepsize = len(simp)/int(fixs.tail(1)["CURRENT_FIX_END"])
             for rec in fixs[["CURRENT_FIX_START","CURRENT_FIX_END"]].itertuples():
-                fixation = np.asarray(simp[int(stepsize*rec[1]):int(stepsize*rec[2])])                
+                fixation = np.asarray(simp[int(stepsize*rec[1]):int(stepsize*rec[2])])
                 disps.append(dists(fixation).var())
 
         return disps
