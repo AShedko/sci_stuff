@@ -34,8 +34,10 @@ class EyeDat:
         fnames = [(glob.glob("./*/{}/{}/Fix*_{}*".format(health, pat, exp))[0], glob.glob("./*/{}/{}/Simple*_{}*".format(health, pat, exp))[0]) for pat in patients]
         df_s = [(pd.read_csv(n[0], delim_whitespace =1, decimal=',',usecols=["CURRENT_FIX_START","CURRENT_FIX_END","CURRENT_FIX_X","CURRENT_FIX_Y","CURRENT_FIX_DURATION"]),
                  pd.read_csv(n[1], delimiter = '\t', decimal=',',usecols=["LEFT_GAZE_X","LEFT_GAZE_Y","RIGHT_GAZE_X","RIGHT_GAZE_Y"])) for n in fnames]
-        for df,s in df_s:
+        for i in range(len(df_s)):
+            df = df_s[i][0]
             df = df[df["CURRENT_FIX_END"]//step % 3 == trial]
+            df_s[i] = df,df_s[i][1]
         disps = self.get_disps(df_s)
         self.df = pd.concat([ f[0] for f in df_s ])
         self.disps = disps
@@ -69,15 +71,20 @@ class EyeDat:
         L=np.linspace(1,max(X))
         axis.plot(L,[clf.predict(x)for x in L],'r')
 
-        return X,y
+        return X,y,clf
 
-def __main__(argc, argv):
-    f, axarr = plt.subplots(3, 4)
-    A=dict()
-    for cond in Health:
-        for exp in range(1,5):
-            dat = EyeDat(cond,exp,0)
-            A[cond+str(exp)] = dat.plot(axarr[i,exp-1])
+def main():
+    plt.tight_layout
+    f=[0,0,0]
+    for trial in range(3):
+        f[trial], axarr = plt.subplots(3, 4,  figsize=(16, 12), dpi=160)
+        i=0
+        for cond in Health:
+            for exp in range(1,5):
+                dat = EyeDat(cond,exp,trial)
+                dat.plot(axarr[i,exp-1])
+            i+=1
+        plt.savefig("Trial"+ str(trial+1))
 
-    f.set_label("Длительность фиксации")
-    plt.show()
+if __name__ == "__main__":
+    main()
